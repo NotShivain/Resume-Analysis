@@ -45,7 +45,7 @@ Used a local **LLM** (via `Ollama`) to:
 
 ## 📦 Installation
 ```bash
-git clone https://github.com/your-username/skillscan-resume-analyzer.git
+git clone https://github.com/NotShivain/skillscan-resume-analyzer.git
 cd skillscan-resume-analyzer
 pip install -r requirements.txt
 ollama run assistant
