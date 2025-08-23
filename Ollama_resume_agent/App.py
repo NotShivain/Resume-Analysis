@@ -2,13 +2,49 @@ import streamlit as st
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import PyPDF2
-import ollama
+from langchain_groq import ChatGroq
+from dotenv import load_dotenv
+from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.docstore.document import Document
 import re
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+import os
 import nltk
 nltk.download('stopwords')
 nltk.download('wordnet')
+load_dotenv()
+os.environ["STREAMLIT_DISABLE_WATCHDOG_WARNINGS"] = "true"
+os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
+
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+st.toast(f"Torch device set to: {device}")
+
+embedder = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_kwargs={"device": device}
+)
+
+db = FAISS.load_local(
+    "faiss_index/resume_data",
+    embeddings=embedder,
+    allow_dangerous_deserialization=True
+)
+template = """
+You are a helpful assistant designed to analyze job category and resumes to identify skill gaps.
+Keep the tone friendly, here are some relevant resume data {context}
+Compare the skills required in the job category with the skills presented in the resume.
+Focus on technical skills and experience. Provide a concise summary of potential skill gaps.
+Also check the resume for any missing content like projects, education, experience etc and by doing all of the above list some 
+helpful tips for the user and then display a message like "If you have any queries feel free to ask me!"
+If no resume is provided, analyze the job category and list key skills required.
+"""
+
 
 def cleanse(concat_text):
     concat_text = concat_text.lower()
@@ -21,7 +57,7 @@ def cleanse(concat_text):
     return ' '.join(sentence)
 
 def load_bert_model():
-    model_name = "aggneya/distilbert-base-uncased-resume-category-pred"
+    model_name = "notshivain1/distilbert-base-uncased-resume-category-pred"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model_bert = AutoModelForSequenceClassification.from_pretrained(model_name)
     return tokenizer, model_bert
@@ -68,7 +104,26 @@ def predict_category_score(text, selected_category):
     return round(confidence_score * 100, 2)
 
 
-model = 'assistant'  
+prompt = PromptTemplate(
+    input_variables=["question", "context"],
+    template=template
+)
+
+llm = ChatGroq(
+    model="llama-3.1-8b-instant",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+)
+
+rag_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=db.as_retriever(search_kwargs={"k": 3}),
+    chain_type="stuff",
+    chain_type_kwargs={"prompt": prompt}
+)
+
 st.title('SkillScan Resume Analyzer')
 job_category_prompt = st.selectbox(
     "Select a Job Category",
@@ -104,14 +159,8 @@ if st.button("Generate Resume Analysis"):
 
         with st.spinner("Generating LLM analysis..."):
             try:
-                full_prompt = f"""
-**Job Category:** {job_category_prompt}
-**Resume Content:** {resume_text}
-
-Analyze the job category relevance and resume content. Suggest missing skills or mismatches.
-"""
-                response = ollama.chat(model=model, messages=[{'role': 'user', 'content': full_prompt}])
-                content = re.sub(r"<think>.*?</think>", "", response['message']['content'], flags=re.DOTALL)
+                response = rag_chain.invoke({"query": f"Job Category: {job_category_prompt}\nResume Content: {resume_text}"})
+                content = response['result']
                 st.subheader("LLM Feedback")
                 st.write(content)
             except Exception as e:
@@ -137,10 +186,10 @@ if user_input:
         st.markdown(user_input)
 
     try:
-        response = ollama.chat(model="assistant", messages=st.session_state.chat_history)
-        reply = response['message']['content']
+        response = rag_chain.invoke({"query": user_input})
+        reply = response['result']
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
     except Exception as e:
-        st.error("Error talking to assistant. Is Ollama running?")
+        st.error(f"Error talking to assistant: {e}")

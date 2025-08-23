@@ -1,0 +1,8 @@
+venv/
+env/
+ENV/
+.venv/
+.pyenv/
+.env
+.env.*
+faiss_index/

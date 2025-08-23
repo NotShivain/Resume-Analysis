@@ -1,0 +1,15 @@
+pypdf2
+nltk
+langchain_core
+python-dotenv
+streamlit
+langchain_community
+langserve
+faiss-cpu
+sentence-transformers
+torch
+langchain
+pandas
+numpy
+langchain-groq
+transformers
