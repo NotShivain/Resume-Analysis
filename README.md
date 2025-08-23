@@ -32,12 +32,12 @@ Used a local **LLM** (via `Groq`) to:
 ---
 
 ## Installation And How to run
-First get your api keys from groq and langchain (imp)
-git clone https://github.com/NotShivain/Resume-Analysis
-start a virtual environment in your project
-run pip install -r requirements.txt
-add your api keys in .env folder
-download the faiss index from the url: https://drive.google.com/drive/folders/1s8XjJoOKWoKe5o21421ufjgfEUAppLLa?usp=sharing
-streamlit run App.py
+- First get your api keys from groq and langchain (imp)
+- git clone https://github.com/NotShivain/Resume-Analysis
+- start a virtual environment in your project
+- run pip install -r requirements.txt
+- add your api keys in .env folder
+- download the faiss index from the url: https://drive.google.com/drive/folders/1s8XjJoOKWoKe5o21421ufjgfEUAppLLa?usp=sharing
+- streamlit run App.py
  
 # Please make sure all the file paths are correctly set before running the project
