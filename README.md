@@ -9,7 +9,7 @@ Welcome to **SkillScan**, an intelligent resume analysis tool powered by **LLMs*
 - `Streamlit` – for building the interactive web UI
 - `HuggingFace Transformers` – fine-tuned `distilbert-base-uncased` for category prediction
 - Model available on: https://huggingface.co/notshivain1/distilbert-base-uncased-resume-category-pred
-- `Ollama` – for lightweight, locally-run LLM inference
+- `Groq` – for LLM inference
 - `PyPDF2`, `NLTK` – for text extraction and cleaning
 - `Torch` – for model inference
 
